@@ -20,8 +20,9 @@ import {
   DEFAULT_USER_DATA_DIR,
   DISABLE_AUTO_SET_DOWNLOAD_BEHAVIOR,
   DISABLED_FEATURES,
-  HOST,
-  PORT,
+  EXTERNAL_PROTO,
+  EXTERNAL_HOST,
+  EXTERNAL_PORT,
   WORKSPACE_DIR,
 } from './config';
 
@@ -207,7 +208,7 @@ export const getDebuggingPages = async (): Promise<ISession[]> => {
   const results = await Promise.all(
     runningBrowsers.map(async (browser) => {
       const { port } = browser._parsed;
-      const host = HOST || '127.0.0.1';
+      const host = EXTERNAL_HOST || '127.0.0.1';
 
       if (!port) {
         throw new Error('Error locating port in browser endpoint: ${endpoint}');
@@ -224,15 +225,18 @@ export const getDebuggingPages = async (): Promise<ISession[]> => {
             ...session,
             browserId: browserWSEndpoint.split('/').pop(),
             browserWSEndpoint: browserWSEndpoint
-              .replace(port, PORT.toString())
+              .replace('ws=', EXTERNAL_PROTO.toString() + '=')
+              .replace(port, EXTERNAL_PORT.toString())
               .replace('127.0.0.1', host),
             devtoolsFrontendUrl: session.devtoolsFrontendUrl
-              .replace(port, PORT.toString())
+              .replace('ws=', EXTERNAL_PROTO.toString() + '=')
+              .replace(port, EXTERNAL_PORT.toString())
               .replace('127.0.0.1', host),
             port,
             trackingId: browser._trackingId,
             webSocketDebuggerUrl: session.webSocketDebuggerUrl
-              .replace(port, PORT.toString())
+              .replace('ws=', EXTERNAL_PROTO.toString() + '=')
+              .replace(port, EXTERNAL_PORT.toString())
               .replace('127.0.0.1', host),
           };
         });
