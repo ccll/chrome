@@ -13,6 +13,7 @@
     "clean": "rimraf build",
     "deploy": "DEBUG=browserless* ./scripts/deploy.js",
     "dev": "npm run build && env-cmd -f ./.env.dev node build/index.js",
+    "ts-dev": "env-cmd -f ./.env.dev ts-node-dev src/index.ts",
     "meta": "./scripts/get-meta.js",
     "start": "node ./build",
     "lint": "tslint -c tslint.json 'src/**/*.ts'",
@@ -93,7 +94,10 @@
   },
   "devDependencies": {
     "env-cmd": "^10.0.0",
-    "husky": "^3.0.0"
+    "global-agent": "^2.1.7",
+    "husky": "^3.0.0",
+    "ts-node-dev": "^1.0.0-pre.44",
+    "xfetch": "^3.14.3"
   },
   "jest": {
     "testEnvironment": "node",
