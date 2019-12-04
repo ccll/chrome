@@ -40,8 +40,8 @@ const buildBrowserSandbox = (page: puppeteer.Page): { console: any } => {
 };
 
 const start = async (
-  { opts, sandboxOpts }:
-  { opts: ILaunchOptions, sandboxOpts: ISandboxOpts },
+  { opts }:
+  { opts: ILaunchOptions },
 ) => {
   debug(`Starting sandbox`);
 
