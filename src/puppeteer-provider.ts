@@ -484,6 +484,9 @@ export class PuppeteerProvider {
       }),
       this.queue.removeAllListeners(),
     ]);
+    if (this.debuggerSandbox != undefined) {
+      this.debuggerSandbox.kill();
+    }
     sysdebug(`Kill complete.`);
   }
 
@@ -506,6 +509,10 @@ export class PuppeteerProvider {
         const browser = await instance;
         return browser.close();
       }));
+    }
+
+    if (this.debuggerSandbox != undefined) {
+      this.debuggerSandbox.kill();
     }
 
     return Promise.resolve();

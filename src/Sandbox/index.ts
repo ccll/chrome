@@ -76,6 +76,7 @@ export class BrowserlessSandbox extends EventEmitter {
 
   public kill() {
     debug(`Killing child sandbox...`);
+    this.cancelJob();
     kill(this.child.pid, 'SIGKILL');
   }
 }
