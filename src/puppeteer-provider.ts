@@ -45,6 +45,7 @@ export class PuppeteerProvider {
   private config: IChromeServiceConfiguration;
   private chromeSwarm: Array<Promise<chromeHelper.IBrowser>>;
   private queue: Queue;
+  private debuggerSandbox: BrowserlessSandbox;
 
   constructor(config: IChromeServiceConfiguration, server: BrowserlessServer, queue: Queue) {
     this.config = config;
@@ -363,28 +364,42 @@ export class PuppeteerProvider {
         const doneOnce = _.once(done);
         const code = this.parseUserCode(debugCode, job);
         const timeout = this.config.connectionTimeout;
-        const handler = new BrowserlessSandbox({
-          code,
-          opts,
+
+        if (this.debuggerSandbox != null && !this.debuggerSandbox.killed()) {
+          jobdebug(`Canceling current job`);
+          // Cancel current job in sandbox.
+          this.debuggerSandbox.cancelJob();
+        } else {
+          jobdebug(`Creating new browser instance`);
+          // Create shared sandbox if not exist or dead.
+          this.debuggerSandbox = new BrowserlessSandbox({
+            opts,
+            timeout,
+          });
+        }
+        job.browser = this.debuggerSandbox;
+
+        // Run new code.
+        jobdebug('=== debug: runCode');
+        this.debuggerSandbox.runCode({
+          code: code,
           sandboxOpts: {
             builtin: this.config.functionBuiltIns,
             external: this.config.functionExternals,
             root: './node_modules',
-          },
-          timeout,
+          }
         });
-        job.browser = handler;
 
         socket.removeListener('close', earlyClose);
         socket.once('close', doneOnce);
 
-        handler.on('launched', ({ port, url }) => {
+        this.debuggerSandbox.on('launched', ({ port, url }) => {
           req.url = url;
           jobdebug(`${job.id}: Got URL ${url}, proxying traffic to ${port}.`);
           this.server.proxy.ws(req, socket, head, { target: `ws://127.0.0.1:${port}` });
         });
 
-        handler.on('error', (err) => {
+        this.debuggerSandbox.on('error', (err) => {
           jobdebug(`${job.id}: Debugger crashed, exiting connection`);
           doneOnce(err);
           socket.end();
@@ -510,7 +525,8 @@ export class PuppeteerProvider {
     }
 
     if (browser instanceof BrowserlessSandbox) {
-      return browser.close();
+      // return browser.close();
+      return; // do not close sandbox as we're sharing a single instance.
     }
 
     const closeChrome = async () => {

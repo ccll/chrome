@@ -2,13 +2,14 @@ import * as _ from 'lodash';
 import * as puppeteer from 'puppeteer';
 import { NodeVM } from 'vm2';
 
-import { ILaunchOptions, launchChrome } from '../chrome-helper';
+import { ILaunchOptions, launchChrome, IBrowser } from '../chrome-helper';
 import { IMessage } from '../models/sandbox.interface';
 import { ISandboxOpts } from '../models/sandbox.interface';
 import { getDebug } from '../utils';
 
 const debug = getDebug('sandbox');
 type consoleMethods = 'log' | 'warn' | 'debug' | 'table' | 'info';
+let browserLaunching: Promise<IBrowser>;
 
 const send = (msg: IMessage) => {
   debug(`Sending parent message: ${JSON.stringify(msg)}`);
@@ -39,10 +40,10 @@ const buildBrowserSandbox = (page: puppeteer.Page): { console: any } => {
 };
 
 const start = async (
-  { code, opts, sandboxOpts }:
-  { code: string; opts: ILaunchOptions, sandboxOpts: ISandboxOpts },
+  { opts, sandboxOpts }:
+  { opts: ILaunchOptions, sandboxOpts: ISandboxOpts },
 ) => {
-  debug(`Starting sandbox running code "${code}"`);
+  debug(`Starting sandbox`);
 
   process.on('unhandledRejection', (error) => {
     debug(`uncaughtException error: ${error}`);
@@ -52,7 +53,17 @@ const start = async (
     });
   });
 
-  const browser = await launchChrome(opts);
+  browserLaunching = launchChrome(opts);
+  browserLaunching.then((browser) => {
+    const port = browser._parsed.port;
+    debug(`Browser launched on port ${port}`);
+  });
+};
+
+const runCode = async({code, sandboxOpts}: {code: string, sandboxOpts: ISandboxOpts}) => {
+  debug(`Sandbox start running code "${code}"`);
+
+  let browser = await browserLaunching;
   const page = await browser.newPage();
 
   page.on('error', (error: Error) => {
@@ -85,9 +96,6 @@ const start = async (
     },
     event: 'launched',
   };
-
-  debug(`Browser launched on port ${port}`);
-
   send(data);
 
   const sandbox = buildBrowserSandbox(page);
@@ -98,13 +106,31 @@ const start = async (
   const handler = vm.run(code);
 
   await handler({ page, context: {} });
-};
+}
+
+
+const cancel = async() => {
+  debug(`Sandbox cancel jobs, clearing pages...`);
+
+  let browser = await browserLaunching;
+  const [blank, ...pages] = await browser.pages();
+  pages.forEach((page) => page.close());
+  blank.goto('about:blank');
+}
 
 process.on('message', (message) => {
   const { event } = message;
 
   if (event === 'start') {
     return start(message.context);
+  }
+
+  if (event === 'runcode') {
+    return runCode(message.context);
+  }
+
+  if (event === 'cancel') {
+    return cancel();
   }
 
   return;

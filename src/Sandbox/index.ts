@@ -2,7 +2,7 @@ import { ChildProcess, fork } from 'child_process';
 import * as EventEmitter from 'events';
 import * as path from 'path';
 
-import { IConfig, IMessage } from '../models/sandbox.interface';
+import { IConfig, IMessage, ISandboxOpts } from '../models/sandbox.interface';
 import { getDebug } from '../utils';
 
 const kill = require('tree-kill');
@@ -12,7 +12,7 @@ export class BrowserlessSandbox extends EventEmitter {
   private child: ChildProcess;
   private timer: NodeJS.Timer | null;
 
-  constructor({ code, timeout, opts, sandboxOpts }: IConfig) {
+  constructor({ timeout, opts }: IConfig) {
     super();
 
     this.child = fork(path.join(__dirname, 'child'));
@@ -40,22 +40,41 @@ export class BrowserlessSandbox extends EventEmitter {
     });
 
     this.child.send({
+      context: { opts },
+      event: 'start',
+    });
+  }
+
+  public killed(): boolean {
+    return this.child.killed;
+  }
+
+  public runCode({code, sandboxOpts}: {code: string, sandboxOpts: ISandboxOpts}) {
+    debug('=== debug: runCode');
+    this.child.send({
       context: {
         code,
-        opts,
         sandboxOpts,
       },
-      event: 'start',
+      event: 'runcode',
+    });
+  }
+
+  public cancelJob() {
+    this.child.send({
+      context: {},
+      event: 'cancel',
     });
   }
 
   public close() {
     this.timer && clearTimeout(this.timer);
-    debug(`Closing child`);
-    this.kill();
+    debug(`Closing child called, not really closing`);
+    // debug(`Closing child`);
+    // this.kill();
   }
 
-  private kill() {
-    kill(this.child.pid, 'SIGKILL');
-  }
+  // private kill() {
+  //   kill(this.child.pid, 'SIGKILL');
+  // }
 }

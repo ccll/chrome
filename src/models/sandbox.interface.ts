@@ -6,10 +6,8 @@ export interface ISandboxOpts {
   root: string;
 }
 export interface IConfig {
-  code: string;
   timeout: number;
   opts?: LaunchOptions;
-  sandboxOpts: ISandboxOpts;
 }
 
 export interface IMessage {
