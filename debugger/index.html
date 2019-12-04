@@ -111,7 +111,7 @@
     display: flex;
     justify-content: center;
   }
-  .new-sandbox {
+  .reset-sandbox {
     background: #3ecf8e;
     border-radius: 17px;
     border: none;
@@ -296,7 +296,7 @@
         <button class="execute-button" title="Execute Script">
           <svg height='18' width='18' fill="#fff" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" viewBox="0 0 60 65" style="enable-background:new 0 0 60 60;" xml:space="preserve"><path d="M5.4,8V52c0,4.3,4.7,7,8.4,4.9l38-22c3.7-2.2,3.7-7.5,0-9.7l-38-22C10.1,1,5.4,3.7,5.4,8z"></path></svg>
         </button>
-        <button class="new-sandbox" title="New Sandbox">
+        <button class="reset-sandbox" title="Reset Sandbox">
             <svg t="1574998831633" width="24" height="24" style="enable-background:new 0 0 60 60;" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4060" ><path d="M737.828571 166.857143l0.457143-0.228572h0.228572L512 36.571429 285.6 166.628571h-0.228571l0.8 0.342858L100 274.285714v475.428572L512 987.428571l412-237.714285V274.285714l-186.171429-107.428571zM478.514286 890.971429L314.971429 796.571429V637.028571L166.857143 552.914286V353.028571l311.657143 179.771429v358.171429zM199.085714 294.285714l153.942857-88.914285 158.742858 91.085714 158.971428-91.314286 154.514286 89.142857-313.028572 180.571429-313.142857-180.571429zM857.142857 553.485714l-147.2 83.542857v158.971429l-164.457143 94.857143V533.028571L857.142857 353.257143v200.228571z" p-id="4061" data-spm-anchor-id="a313x.7781069.0.i14"></path></svg>
         </button>
       </div>
@@ -367,7 +367,8 @@ module.exports = async ({ page }) => {
 
   const $intro = document.querySelector('.intro');
   const $resizer = document.querySelector('.resizer');
-  const $executeBtn = document.querySelector('.run-container');
+  const $executeBtn = document.querySelector('.execute-button');
+  const $resetBtn = document.querySelector('.reset-sandbox');
   const $codeText = document.querySelector('#code-mount textarea');
   const $debugFrame = document.querySelector('#frame-mount iframe');
   const $codePanel = document.querySelector('#code-mount');
@@ -595,6 +596,16 @@ const puppeteer = require('puppeteer');
     loadIframe(code);
   }
 
+  async function resetSandbox() {
+    fetch(`${baseURL}/sandbox/reset`, {
+      credentials: 'same-origin',
+      headers: {
+        'Accept': 'application/json',
+      }
+    })
+    .then(res => res.json());
+  }
+
   const editor = CodeMirror.fromTextArea($codeText, {
     lineNumbers: true,
     lineWrapping: true,
@@ -678,6 +689,7 @@ const puppeteer = require('puppeteer');
   });
 
   $executeBtn.addEventListener('click', execute);
+  $resetBtn.addEventListener('click', resetSandbox);
 
   editor.on('change', () => {
     onEditScript(editor.getValue());

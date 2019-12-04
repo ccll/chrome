@@ -45,7 +45,7 @@ export class PuppeteerProvider {
   private config: IChromeServiceConfiguration;
   private chromeSwarm: Array<Promise<chromeHelper.IBrowser>>;
   private queue: Queue;
-  private debuggerSandbox: BrowserlessSandbox;
+  private debuggerSandbox: BrowserlessSandbox | undefined;
 
   constructor(config: IChromeServiceConfiguration, server: BrowserlessServer, queue: Queue) {
     this.config = config;
@@ -290,6 +290,13 @@ export class PuppeteerProvider {
     this.addJob(job);
   }
 
+  public resetDebuggerSandbox() {
+    if (this.debuggerSandbox != undefined) {
+      this.debuggerSandbox.kill();
+      this.debuggerSandbox = undefined;
+    }
+  }
+
   public async runWebSocket(req: utils.IHTTPRequest, socket: net.Socket, head: Buffer) {
     const jobId = utils.id();
     const parsedUrl = req.parsed;
@@ -365,7 +372,7 @@ export class PuppeteerProvider {
         const code = this.parseUserCode(debugCode, job);
         const timeout = this.config.connectionTimeout;
 
-        if (this.debuggerSandbox != null && !this.debuggerSandbox.killed()) {
+        if (this.debuggerSandbox != undefined && !this.debuggerSandbox.killed()) {
           jobdebug(`Canceling current job`);
           // Cancel current job in sandbox.
           this.debuggerSandbox.cancelJob();

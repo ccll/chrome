@@ -407,5 +407,11 @@ export const getRoutes = ({
     }));
   }
 
+
+  router.get('/sandbox/reset', asyncWebHandler(async (_req: Request, res: Response) => {
+    puppeteerProvider.resetDebuggerSandbox();
+    return res.json({});
+  }));
+
   return router;
 };
